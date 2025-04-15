@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useRef } from "react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useProfile, ProfileData } from "@/hooks/useProfile";
 import { 
-  User, 
+  User as UserIcon, 
   Building, 
   Mail, 
   Link as LinkIcon, 
@@ -19,35 +20,153 @@ import {
   Bell, 
   Shield, 
   Trash2, 
-  SaveIcon,
+  Save as SaveIcon,
   Linkedin,
   Twitter,
   Calendar,
   Upload,
-  CheckCircle2,
+  CheckCircle2 as CheckCircleIcon,
   AlertCircle as AlertCircleIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const Profile = () => {
-  const { profile, isLoading, updateProfile } = useProfile();
-  const [formData, setFormData] = useState<Partial<ProfileData>>(profile || {});
+  const { profile, isLoading, updateProfile, uploadProfilePicture, deleteAccount } = useProfile();
+  const [formData, setFormData] = useState<Partial<ProfileData>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  
+  // Update formData when profile data is loaded
+  useState(() => {
+    if (profile) {
+      setFormData(profile);
+    }
+  });
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear validation error when field is changed
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
   
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear validation error when field is changed
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
   
   const handleSwitchChange = (name: string, checked: boolean) => {
     setFormData(prev => ({ ...prev, [name]: checked }));
   };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    // Validate website URL
+    if (formData.website && !isValidUrl(formData.website)) {
+      errors.website = "Please enter a valid URL (e.g., https://example.com)";
+    }
+    
+    // Validate fund_size_goal is a number
+    if (formData.fund_size_goal && isNaN(Number(formData.fund_size_goal))) {
+      errors.fund_size_goal = "Fund size goal must be a number";
+    }
+    
+    // Validate funding_goal is a number
+    if (formData.funding_goal && isNaN(Number(formData.funding_goal))) {
+      errors.funding_goal = "Funding goal must be a number";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+  
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
   
   const handleSaveProfile = () => {
-    updateProfile(formData);
+    if (validateForm()) {
+      updateProfile(formData);
+    } else {
+      toast({
+        title: "Validation Error",
+        description: "Please correct the errors in the form",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file is an image
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create image object for dimension validation
+    const img = new Image();
+    img.onload = async () => {
+      URL.revokeObjectURL(img.src);
+      
+      // Validate image dimensions
+      if (img.width < 400 || img.height < 400) {
+        toast({
+          title: "Image Too Small",
+          description: "Please select an image at least 400x400 pixels",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Upload image
+      setIsUploading(true);
+      const imageUrl = await uploadProfilePicture(file);
+      setIsUploading(false);
+      
+      if (imageUrl) {
+        setFormData(prev => ({ ...prev, profile_picture: imageUrl }));
+        updateProfile({ ...formData, profile_picture: imageUrl });
+      }
+    };
+    
+    img.src = URL.createObjectURL(file);
+  };
+  
+  const handleDeleteAccount = () => {
+    deleteAccount();
+    setDeleteConfirmOpen(false);
   };
 
   if (isLoading) {
@@ -65,7 +184,7 @@ const Profile = () => {
   }
   
   return (
-    <Layout showSidebar userType={profile?.role as "founder" | "fundraisingPro"}>
+    <Layout showSidebar userType={(profile?.role || "founder") as "founder" | "fundraisingPro"}>
       <div className="container p-4 md:p-6 lg:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
@@ -146,6 +265,9 @@ const Profile = () => {
                               value={formData.funding_goal || ''}
                               onChange={handleInputChange}
                             />
+                            {formErrors.funding_goal && (
+                              <p className="text-sm text-red-500">{formErrors.funding_goal}</p>
+                            )}
                           </div>
                         </div>
                       </>
@@ -180,6 +302,9 @@ const Profile = () => {
                             value={formData.fund_size_goal || ''}
                             onChange={handleInputChange}
                           />
+                          {formErrors.fund_size_goal && (
+                            <p className="text-sm text-red-500">{formErrors.fund_size_goal}</p>
+                          )}
                         </div>
                       </>
                     )}
@@ -192,6 +317,9 @@ const Profile = () => {
                         value={formData.website || ''}
                         onChange={handleInputChange}
                       />
+                      {formErrors.website && (
+                        <p className="text-sm text-red-500">{formErrors.website}</p>
+                      )}
                     </div>
                   </CardContent>
                   <CardFooter>
@@ -208,18 +336,60 @@ const Profile = () => {
                   <CardContent className="flex flex-col items-center space-y-4">
                     <div className="relative">
                       <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                        <User className="h-16 w-16 text-gray-400" />
+                        {formData.profile_picture ? (
+                          <img 
+                            src={formData.profile_picture} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <UserIcon className="h-16 w-16 text-gray-400" />
+                        )}
                       </div>
-                      <Button size="sm" variant="outline" className="absolute bottom-0 right-0 rounded-full">
-                        <Upload className="h-4 w-4" />
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="absolute bottom-0 right-0 rounded-full"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? (
+                          <span className="animate-spin">↻</span>
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
                       </Button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleProfilePictureChange}
+                      />
                     </div>
                     <div className="text-center">
                       <p className="text-sm text-gray-500">Upload a square image, at least 400x400px</p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">Upload</Button>
-                      <Button variant="outline" size="sm">Remove</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? 'Uploading...' : 'Upload'}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, profile_picture: undefined }));
+                          updateProfile({ ...formData, profile_picture: null });
+                        }}
+                        disabled={!formData.profile_picture || isUploading}
+                      >
+                        Remove
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -235,14 +405,14 @@ const Profile = () => {
                           <Calendar className="h-5 w-5 text-gray-500" />
                           <span>Account Created</span>
                         </div>
-                        <span className="text-sm">Apr 1, 2025</span>
+                        <span className="text-sm">Apr 15, 2025</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <Shield className="h-5 w-5 text-gray-500" />
                           <span>Account Type</span>
                         </div>
-                        <span className="text-sm capitalize">{profile?.role}</span>
+                        <span className="text-sm capitalize">{formData.role || ''}</span>
                       </div>
                     </div>
                     
@@ -250,10 +420,34 @@ const Profile = () => {
                     
                     <div>
                       <h3 className="text-sm font-medium mb-2">Danger Zone</h3>
-                      <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Account
-                      </Button>
+                      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Account
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Are you absolutely sure?</DialogTitle>
+                            <DialogDescription>
+                              This action cannot be undone. This will permanently delete your account
+                              and remove your data from our servers.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+                              Cancel
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              onClick={handleDeleteAccount}
+                            >
+                              Yes, delete my account
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </CardContent>
                 </Card>
