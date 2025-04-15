@@ -1,78 +1,82 @@
 
-import React, { createContext, useState, useContext, useEffect } from "react";
-import { Founder, FundraisingPro } from "../types";
-import { authStore } from "../lib/auth";
+import { createContext, useContext, useEffect, useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
-  user: Founder | FundraisingPro | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<Founder | FundraisingPro>;
-  signup: (userData: Partial<Founder | FundraisingPro>, password: string) => Promise<Founder | FundraisingPro>;
-  logout: () => void;
-  isLoading: boolean;
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isAuthenticated: false,
-  login: () => Promise.reject(),
-  signup: () => Promise.reject(),
-  logout: () => {},
-  isLoading: true
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => useContext(AuthContext);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<Founder | FundraisingPro | null>(authStore.getCurrentUser());
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(authStore.isAuthenticated);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for existing authentication on component mount
-    authStore.checkAuth();
-    setUser(authStore.getCurrentUser());
-    setIsAuthenticated(authStore.isAuthenticated);
-    setIsLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const user = await authStore.login(email, password);
-      setUser(user);
-      setIsAuthenticated(true);
-      setIsLoading(false);
-      return user;
-    } catch (error) {
-      setIsLoading(false);
-      throw error;
-    }
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    navigate('/dashboard');
   };
 
-  const signup = async (userData: Partial<Founder | FundraisingPro>, password: string) => {
-    setIsLoading(true);
-    try {
-      const user = await authStore.signup(userData, password);
-      setUser(user);
-      setIsAuthenticated(true);
-      setIsLoading(false);
-      return user;
-    } catch (error) {
-      setIsLoading(false);
-      throw error;
-    }
+  const signUp = async (email: string, password: string, fullName: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
+    if (error) throw error;
+    navigate('/dashboard');
   };
 
-  const logout = () => {
-    authStore.logout();
-    setUser(null);
-    setIsAuthenticated(false);
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, signup, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

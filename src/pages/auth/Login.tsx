@@ -1,38 +1,39 @@
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
+import { Layout } from "@/components/Layout";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
+    
+    // Normally this would connect to Supabase or another authentication service
+    // For demo purposes, we'll just simulate a successful login
     try {
-      await login(email, password);
+      // Simulating API request
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       toast({
         title: "Login successful",
-        description: "Welcome back!",
+        description: "Welcome back to ConnectCapital!",
       });
+      
       navigate("/dashboard");
     } catch (error) {
       toast({
         title: "Login failed",
-        description: "Invalid email or password. Please try again.",
+        description: "Please check your credentials and try again.",
         variant: "destructive",
       });
     } finally {
@@ -40,105 +41,115 @@ export default function Login() {
     }
   };
 
-  // For demo purposes, add some login credentials
-  const handleDemoLogin = (role: 'founder' | 'fundraisingPro') => {
-    if (role === 'founder') {
-      setEmail('john@startup.com');
-      setPassword('password');
-    } else {
-      setEmail('jane@fundraiser.com');
-      setPassword('password');
-    }
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
-      <Link to="/" className="mb-8 text-2xl font-bold text-brand-navy">
-        FunderLink
-      </Link>
-      <Card className="mx-auto max-w-md w-full">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
-          <CardDescription>
-            Enter your email and password to access your account
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs text-primary underline underline-offset-4 hover:opacity-80"
-                >
-                  Forgot password?
-                </Link>
+    <Layout>
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-bold tracking-tight text-navy">
+              Sign in to your account
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Or{" "}
+              <Link to="/auth/signup" className="font-medium text-teal hover:text-teal-dark">
+                create a new account
+              </Link>
+            </p>
+          </div>
+          
+          <div className="mt-8 bg-white p-8 shadow-md rounded-lg border">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div>
+                <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </Label>
+                <div className="mt-1">
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+
+              <div>
+                <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </Label>
+                <div className="mt-1">
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-teal focus:ring-teal"
+                  />
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                    Remember me
+                  </label>
+                </div>
+
+                <div className="text-sm">
+                  <Link to="/auth/forgot-password" className="font-medium text-teal hover:text-teal-dark">
+                    Forgot your password?
+                  </Link>
+                </div>
+              </div>
+
+              <div>
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-navy hover:bg-navy-light text-white"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {isLoading ? "Signing in..." : "Sign in"}
+                </Button>
+              </div>
+            </form>
+
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <Button variant="outline" className="w-full">
+                  Google
+                </Button>
+                <Button variant="outline" className="w-full">
+                  LinkedIn
                 </Button>
               </div>
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
-            <div className="text-sm text-center text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link
-                to="/signup"
-                className="text-primary underline underline-offset-4 hover:opacity-80"
-              >
-                Sign up
-              </Link>
-            </div>
-          </CardFooter>
-        </form>
-      </Card>
-      
-      <div className="mt-8 space-y-3 text-center">
-        <p className="text-sm font-medium text-muted-foreground">Quick demo logins</p>
-        <div className="flex gap-4 justify-center">
-          <Button variant="outline" onClick={() => handleDemoLogin('founder')}>
-            Demo as Founder
-          </Button>
-          <Button variant="outline" onClick={() => handleDemoLogin('fundraisingPro')}>
-            Demo as Fundraising Pro
-          </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default Login;
