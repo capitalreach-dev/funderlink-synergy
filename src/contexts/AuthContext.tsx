@@ -4,12 +4,14 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
+export type UserRole = 'founder' | 'fundraisingPro';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, userType?: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, userType?: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate('/dashboard');
   };
 
-  const signUp = async (email: string, password: string, fullName: string, userType = 'founder') => {
+  const signUp = async (email: string, password: string, fullName: string, userType: UserRole = 'founder') => {
     const { error } = await supabase.auth.signUp({
       email,
       password,

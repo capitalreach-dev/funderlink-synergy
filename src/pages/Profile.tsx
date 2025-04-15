@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, ProfileData } from "@/hooks/useProfile";
 import { 
   User, 
   Building, 
@@ -24,14 +24,14 @@ import {
   Twitter,
   Calendar,
   Upload,
-  CheckCircle,
-  AlertCircle
+  CheckCircle2,
+  AlertCircle as AlertCircleIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const { profile, isLoading, updateProfile } = useProfile();
-  const [formData, setFormData] = useState(profile || {});
+  const [formData, setFormData] = useState<Partial<ProfileData>>(profile || {});
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -65,7 +65,7 @@ const Profile = () => {
   }
   
   return (
-    <Layout showSidebar userType={profile?.role}>
+    <Layout showSidebar userType={profile?.role as "founder" | "fundraisingPro"}>
       <div className="container p-4 md:p-6 lg:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
@@ -122,7 +122,7 @@ const Profile = () => {
                           <div className="space-y-2">
                             <Label htmlFor="stage">Stage</Label>
                             <Select 
-                              value={formData.stage}
+                              value={formData.stage || ''}
                               onValueChange={(value) => handleSelectChange("stage", value)}
                             >
                               <SelectTrigger id="stage">
@@ -304,7 +304,7 @@ const Profile = () => {
                   <div className="space-y-2">
                     <Label htmlFor="industry">Industry</Label>
                     <Select 
-                      value={formData.industry ? formData.industry[0] : ''}
+                      value={formData.industry && formData.industry.length > 0 ? formData.industry[0] : ''}
                       onValueChange={(value) => handleSelectChange("industry", value)}
                     >
                       <SelectTrigger id="industry">
@@ -325,7 +325,7 @@ const Profile = () => {
                   <div className="space-y-2">
                     <Label htmlFor="fundingStage">Funding Stage</Label>
                     <Select 
-                      value={formData.stage}
+                      value={formData.stage || ''}
                       onValueChange={(value) => handleSelectChange("stage", value)}
                     >
                       <SelectTrigger id="fundingStage">
@@ -415,7 +415,7 @@ const Profile = () => {
                       </div>
                       <div className="bg-gray-50 p-4 rounded-md flex items-center">
                         <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
                           <p className="font-medium">Gmail Connected</p>
@@ -519,7 +519,7 @@ const Profile = () => {
                   
                   <div className="bg-gray-50 p-4 rounded-md flex items-center">
                     <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center mr-3">
-                      <AlertCircle className="h-5 w-5 text-red-600" />
+                      <AlertCircleIcon className="h-5 w-5 text-red-600" />
                     </div>
                     <div>
                       <p className="font-medium">Calendar Not Connected</p>
@@ -609,7 +609,7 @@ const Profile = () => {
                   </div>
                   <Switch 
                     id="emailNotifications" 
-                    checked={formData.email_connected}
+                    checked={!!formData.email_connected}
                     onCheckedChange={(checked) => handleSwitchChange("email_connected", checked)}
                   />
                 </div>
@@ -678,39 +678,5 @@ const Profile = () => {
     </Layout>
   );
 };
-
-// Add missing CheckCircle and AlertCircle components
-const CheckCircle = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-);
-
-const AlertCircle = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="8" x2="12" y2="12" />
-    <line x1="12" y1="16" x2="12.01" y2="16" />
-  </svg>
-);
 
 export default Profile;

@@ -15,7 +15,7 @@ export type ProfileData = {
   focus?: string;
   raising_for?: string;
   fund_size_goal?: number;
-  role: string;
+  role: 'founder' | 'fundraisingPro';
   email_connected: boolean;
   email_provider?: string;
 };
