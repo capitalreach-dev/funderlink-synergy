@@ -9,7 +9,72 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string | null
+          email_connected: boolean | null
+          email_oauth_token: string | null
+          email_provider: string | null
+          focus: string | null
+          fund_size_goal: number | null
+          funding_goal: number | null
+          id: string
+          industry: string[] | null
+          logo_url: string | null
+          organization_name: string | null
+          raising_for: string | null
+          role: string
+          stage: string | null
+          startup_description: string | null
+          startup_name: string | null
+          subscription_status: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_connected?: boolean | null
+          email_oauth_token?: string | null
+          email_provider?: string | null
+          focus?: string | null
+          fund_size_goal?: number | null
+          funding_goal?: number | null
+          id: string
+          industry?: string[] | null
+          logo_url?: string | null
+          organization_name?: string | null
+          raising_for?: string | null
+          role: string
+          stage?: string | null
+          startup_description?: string | null
+          startup_name?: string | null
+          subscription_status?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_connected?: boolean | null
+          email_oauth_token?: string | null
+          email_provider?: string | null
+          focus?: string | null
+          fund_size_goal?: number | null
+          funding_goal?: number | null
+          id?: string
+          industry?: string[] | null
+          logo_url?: string | null
+          organization_name?: string | null
+          raising_for?: string | null
+          role?: string
+          stage?: string | null
+          startup_description?: string | null
+          startup_name?: string | null
+          subscription_status?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

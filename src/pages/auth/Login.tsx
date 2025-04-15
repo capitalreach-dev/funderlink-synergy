@@ -2,38 +2,34 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Normally this would connect to Supabase or another authentication service
-    // For demo purposes, we'll just simulate a successful login
     try {
-      // Simulating API request
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await signIn(email, password);
       toast({
-        title: "Login successful",
-        description: "Welcome back to ConnectCapital!",
+        title: "Welcome back!",
+        description: "You've successfully signed in.",
       });
-      
-      navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
+        title: "Error",
+        description: error.message || "Invalid credentials",
         variant: "destructive",
       });
     } finally {
@@ -44,62 +40,44 @@ const Login = () => {
   return (
     <Layout>
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h2 className="mt-6 text-3xl font-bold tracking-tight text-navy">
-              Sign in to your account
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Or{" "}
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold">Welcome back</CardTitle>
+            <CardDescription>
+              Don't have an account?{" "}
               <Link to="/auth/signup" className="font-medium text-teal hover:text-teal-dark">
-                create a new account
+                Sign up
               </Link>
-            </p>
-          </div>
-          
-          <div className="mt-8 bg-white p-8 shadow-md rounded-lg border">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div>
-                <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email address
-                </Label>
-                <div className="mt-1">
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full"
-                  />
-                </div>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
 
-              <div>
-                <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </Label>
-                <div className="mt-1">
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
                     id="remember-me"
-                    name="remember-me"
                     type="checkbox"
                     className="h-4 w-4 rounded border-gray-300 text-teal focus:ring-teal"
                   />
@@ -115,38 +93,16 @@ const Login = () => {
                 </div>
               </div>
 
-              <div>
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-navy hover:bg-navy-light text-white"
-                >
-                  {isLoading ? "Signing in..." : "Sign in"}
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                className="w-full bg-navy hover:bg-navy-light"
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing in..." : "Sign in"}
+              </Button>
             </form>
-
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <Button variant="outline" className="w-full">
-                  Google
-                </Button>
-                <Button variant="outline" className="w-full">
-                  LinkedIn
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
