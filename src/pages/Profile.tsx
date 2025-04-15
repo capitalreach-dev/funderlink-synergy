@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -10,11 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useProfile } from "@/hooks/useProfile";
 import { 
   User, 
   Building, 
   Mail, 
-  Link, 
+  Link as LinkIcon, 
   Settings, 
   Bell, 
   Shield, 
@@ -23,60 +23,49 @@ import {
   Linkedin,
   Twitter,
   Calendar,
-  Upload
+  Upload,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
-  const { toast } = useToast();
-  const [userType] = useState<'founder' | 'fundraisingPro'>('founder');
-  
-  const [profile, setProfile] = useState({
-    firstName: "Alex",
-    lastName: "Johnson",
-    email: "alex@example.com",
-    phone: "+1 (555) 123-4567",
-    jobTitle: "CEO & Founder",
-    companyName: "TechStartup Inc.",
-    companyWebsite: "https://techstartup.example.com",
-    companyDescription: "We're building an innovative SaaS platform that helps businesses streamline their operations and increase productivity.",
-    foundedYear: "2023",
-    teamSize: "5",
-    linkedIn: "linkedin.com/in/alexjohnson",
-    twitter: "twitter.com/alexjohnson",
-    location: "San Francisco, CA",
-    industry: "SaaS",
-    fundingStage: "seed",
-    fundingAmount: "$1,500,000",
-    emailProvider: "gmail",
-    emailNotifications: true,
-    weeklyDigest: true,
-    investorAlerts: true
-  });
+  const { profile, isLoading, updateProfile } = useProfile();
+  const [formData, setFormData] = useState(profile || {});
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setProfile(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
   
   const handleSelectChange = (name: string, value: string) => {
-    setProfile(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
   
   const handleSwitchChange = (name: string, checked: boolean) => {
-    setProfile(prev => ({ ...prev, [name]: checked }));
+    setFormData(prev => ({ ...prev, [name]: checked }));
   };
   
   const handleSaveProfile = () => {
-    // Here you would save the profile data to your backend
-    toast({
-      title: "Profile updated",
-      description: "Your profile changes have been saved successfully.",
-    });
+    updateProfile(formData);
   };
+
+  if (isLoading) {
+    return (
+      <Layout showSidebar>
+        <div className="container p-4 md:p-6 lg:p-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-[200px] bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   
   return (
-    <Layout showSidebar userType={userType}>
+    <Layout showSidebar userType={profile?.role}>
       <div className="container p-4 md:p-6 lg:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
@@ -107,132 +96,107 @@ const Profile = () => {
                     <CardDescription>Update your personal details and contact information</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
-                        <Input 
-                          id="firstName" 
-                          name="firstName" 
-                          value={profile.firstName}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
-                        <Input 
-                          id="lastName" 
-                          name="lastName" 
-                          value={profile.lastName}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
+                    {profile?.role === 'founder' ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="startup_name">Startup Name</Label>
+                          <Input 
+                            id="startup_name" 
+                            name="startup_name" 
+                            value={formData.startup_name || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="startup_description">Startup Description</Label>
+                          <Textarea 
+                            id="startup_description" 
+                            name="startup_description" 
+                            value={formData.startup_description || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="stage">Stage</Label>
+                            <Select 
+                              value={formData.stage}
+                              onValueChange={(value) => handleSelectChange("stage", value)}
+                            >
+                              <SelectTrigger id="stage">
+                                <SelectValue placeholder="Select stage" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pre-seed">Pre-seed</SelectItem>
+                                <SelectItem value="seed">Seed</SelectItem>
+                                <SelectItem value="series-a">Series A</SelectItem>
+                                <SelectItem value="series-b">Series B+</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="funding_goal">Funding Goal</Label>
+                            <Input 
+                              id="funding_goal" 
+                              name="funding_goal" 
+                              type="number"
+                              value={formData.funding_goal || ''}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="organization_name">Organization Name</Label>
+                          <Input 
+                            id="organization_name" 
+                            name="organization_name" 
+                            value={formData.organization_name || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="focus">Investment Focus</Label>
+                          <Input 
+                            id="focus" 
+                            name="focus" 
+                            value={formData.focus || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="fund_size_goal">Fund Size Goal</Label>
+                          <Input 
+                            id="fund_size_goal" 
+                            name="fund_size_goal" 
+                            type="number"
+                            value={formData.fund_size_goal || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </>
+                    )}
                     
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
+                      <Label htmlFor="website">Website</Label>
                       <Input 
-                        id="email" 
-                        name="email" 
-                        value={profile.email}
+                        id="website" 
+                        name="website" 
+                        value={formData.website || ''}
                         onChange={handleInputChange}
                       />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input 
-                        id="phone" 
-                        name="phone" 
-                        value={profile.phone}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="jobTitle">Job Title</Label>
-                        <Input 
-                          id="jobTitle" 
-                          name="jobTitle" 
-                          value={profile.jobTitle}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location">Location</Label>
-                        <Input 
-                          id="location" 
-                          name="location" 
-                          value={profile.location}
-                          onChange={handleInputChange}
-                        />
-                      </div>
                     </div>
                   </CardContent>
-                </Card>
-                
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>Social Profiles</CardTitle>
-                    <CardDescription>Connect your social media accounts</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Linkedin className="text-[#0077B5]" />
-                        <Label htmlFor="linkedIn">LinkedIn Profile</Label>
-                      </div>
-                      <Input 
-                        id="linkedIn" 
-                        name="linkedIn" 
-                        value={profile.linkedIn}
-                        onChange={handleInputChange}
-                        placeholder="linkedin.com/in/yourprofile"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Twitter className="text-[#1DA1F2]" />
-                        <Label htmlFor="twitter">Twitter Profile</Label>
-                      </div>
-                      <Input 
-                        id="twitter" 
-                        name="twitter" 
-                        value={profile.twitter}
-                        onChange={handleInputChange}
-                        placeholder="twitter.com/yourusername"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>Password & Security</CardTitle>
-                    <CardDescription>Manage your account security settings</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input id="currentPassword" type="password" />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="newPassword">New Password</Label>
-                        <Input id="newPassword" type="password" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                        <Input id="confirmPassword" type="password" />
-                      </div>
-                    </div>
-                    
-                    <div className="pt-2">
-                      <Button variant="outline">Change Password</Button>
-                    </div>
-                  </CardContent>
+                  <CardFooter>
+                    <Button onClick={handleSaveProfile}>Save Changes</Button>
+                  </CardFooter>
                 </Card>
               </div>
               
@@ -278,7 +242,7 @@ const Profile = () => {
                           <Shield className="h-5 w-5 text-gray-500" />
                           <span>Account Type</span>
                         </div>
-                        <span className="text-sm capitalize">{userType}</span>
+                        <span className="text-sm capitalize">{profile?.role}</span>
                       </div>
                     </div>
                     
@@ -310,7 +274,7 @@ const Profile = () => {
                     <Input 
                       id="companyName" 
                       name="companyName" 
-                      value={profile.companyName}
+                      value={formData.organization_name || ''}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -319,7 +283,7 @@ const Profile = () => {
                     <Input 
                       id="companyWebsite" 
                       name="companyWebsite" 
-                      value={profile.companyWebsite}
+                      value={formData.website || ''}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -330,7 +294,7 @@ const Profile = () => {
                   <Textarea 
                     id="companyDescription" 
                     name="companyDescription" 
-                    value={profile.companyDescription}
+                    value={formData.startup_description || ''}
                     onChange={handleInputChange}
                     rows={4}
                   />
@@ -340,7 +304,7 @@ const Profile = () => {
                   <div className="space-y-2">
                     <Label htmlFor="industry">Industry</Label>
                     <Select 
-                      value={profile.industry}
+                      value={formData.industry ? formData.industry[0] : ''}
                       onValueChange={(value) => handleSelectChange("industry", value)}
                     >
                       <SelectTrigger id="industry">
@@ -361,8 +325,8 @@ const Profile = () => {
                   <div className="space-y-2">
                     <Label htmlFor="fundingStage">Funding Stage</Label>
                     <Select 
-                      value={profile.fundingStage}
-                      onValueChange={(value) => handleSelectChange("fundingStage", value)}
+                      value={formData.stage}
+                      onValueChange={(value) => handleSelectChange("stage", value)}
                     >
                       <SelectTrigger id="fundingStage">
                         <SelectValue placeholder="Select stage" />
@@ -383,7 +347,7 @@ const Profile = () => {
                     <Input 
                       id="foundedYear" 
                       name="foundedYear" 
-                      value={profile.foundedYear}
+                      value={formData.startup_name || ''}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -392,7 +356,7 @@ const Profile = () => {
                     <Input 
                       id="teamSize" 
                       name="teamSize" 
-                      value={profile.teamSize}
+                      value={formData.startup_name || ''}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -403,7 +367,7 @@ const Profile = () => {
                   <Input 
                     id="fundingAmount" 
                     name="fundingAmount" 
-                    value={profile.fundingAmount}
+                    value={formData.funding_goal || ''}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -425,8 +389,8 @@ const Profile = () => {
                   <div className="space-y-2">
                     <Label htmlFor="emailProvider">Email Provider</Label>
                     <Select 
-                      value={profile.emailProvider}
-                      onValueChange={(value) => handleSelectChange("emailProvider", value)}
+                      value={formData.email_provider || ''}
+                      onValueChange={(value) => handleSelectChange("email_provider", value)}
                     >
                       <SelectTrigger id="emailProvider">
                         <SelectValue placeholder="Select provider" />
@@ -439,13 +403,13 @@ const Profile = () => {
                     </Select>
                   </div>
                   
-                  {profile.emailProvider === 'gmail' && (
+                  {formData.email_provider === 'gmail' && (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="gmailAddress">Gmail Address</Label>
                         <Input 
                           id="gmailAddress" 
-                          value={profile.email}
+                          value={formData.startup_name || ''}
                           readOnly
                         />
                       </div>
@@ -464,7 +428,7 @@ const Profile = () => {
                     </div>
                   )}
                   
-                  {profile.emailProvider === 'outlook' && (
+                  {formData.email_provider === 'outlook' && (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="outlookAddress">Outlook Address</Label>
@@ -477,7 +441,7 @@ const Profile = () => {
                     </div>
                   )}
                   
-                  {profile.emailProvider === 'smtp' && (
+                  {formData.email_provider === 'smtp' && (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="smtpServer">SMTP Server</Label>
@@ -645,8 +609,8 @@ const Profile = () => {
                   </div>
                   <Switch 
                     id="emailNotifications" 
-                    checked={profile.emailNotifications}
-                    onCheckedChange={(checked) => handleSwitchChange("emailNotifications", checked)}
+                    checked={formData.email_connected}
+                    onCheckedChange={(checked) => handleSwitchChange("email_connected", checked)}
                   />
                 </div>
                 
@@ -659,9 +623,9 @@ const Profile = () => {
                   </div>
                   <Switch 
                     id="weeklyDigest" 
-                    checked={profile.weeklyDigest}
+                    checked={true}
                     onCheckedChange={(checked) => handleSwitchChange("weeklyDigest", checked)}
-                    disabled={!profile.emailNotifications}
+                    disabled={!formData.email_connected}
                   />
                 </div>
                 
@@ -674,9 +638,9 @@ const Profile = () => {
                   </div>
                   <Switch 
                     id="investorAlerts" 
-                    checked={profile.investorAlerts}
+                    checked={true}
                     onCheckedChange={(checked) => handleSwitchChange("investorAlerts", checked)}
-                    disabled={!profile.emailNotifications}
+                    disabled={!formData.email_connected}
                   />
                 </div>
                 
@@ -690,7 +654,7 @@ const Profile = () => {
                   <Switch 
                     id="responseAlerts" 
                     checked={true}
-                    disabled={!profile.emailNotifications}
+                    disabled={!formData.email_connected}
                   />
                 </div>
                 
